@@ -1,0 +1,234 @@
+nav {
+    height: 60px;
+}
+
+.imageWrapper {
+    position: relative;
+    width: auto;
+    height: 100%;
+    transform: scale(1.2) translate(20px, 25px);
+}
+
+.heroSection {
+    height: calc(100vh - 60px);
+
+    .captionArea,
+    .imgArea {
+        width: 50%;
+    }
+}
+
+#getWorkSection {
+    .shape {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+    }
+
+    .shapeOne {
+        position: absolute;
+        top: 0;
+        right: 0;
+        fill: var(--color-primary-500);
+
+        path:nth-child(2) {
+            fill: var(--color-primary-dark-500);
+        }
+    }
+
+    .shapeTwo {
+        position: absolute;
+        top: 0;
+        left: 145px;
+        fill: #ffffff0d;
+    }
+
+    .shapeThree {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        fill: #ffffff0d;
+    }
+
+    .shapeFour {
+        position: absolute;
+        top: 0;
+        left: 0;
+        fill: var(--color-primary-500);
+
+        path:nth-child(2) {
+            fill: var(--color-primary-dark-500);
+        }
+    }
+
+    .videoBtnIcon {}
+
+
+    .acttionBtn {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 55px;
+        height: 60px;
+        border: 1px solid rgba(var(--white-rgb), 0.1);
+        z-index: 10;
+
+        &:hover {
+            border-color: var(--color-primary-600);
+
+            .videoBtnBorder {
+                border-color: var(--color-primary-600);
+            }
+        }
+    }
+
+    .videoBtnBorder {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        content: "";
+        border: 1px solid rgba(var(--white-rgb), 0.1);
+        z-index: 0;
+        -webkit-animation: pulse-animate 4s linear infinite;
+        animation: pulse-animate 4s linear infinite;
+
+        &:nth-child(2) {
+            -webkit-animation-delay: 1s;
+            animation-delay: 1s;
+        }
+
+        &:nth-child(3) {
+            -webkit-animation-delay: 2s;
+            animation-delay: 2s;
+        }
+
+        &:nth-child(4) {
+            -webkit-animation-delay: 3s;
+            animation-delay: 3s;
+        }
+
+        &:nth-child(5) {
+            -webkit-animation-delay: 4s;
+            animation-delay: 4s;
+        }
+
+        @keyframes pulse-animate {
+            0% {
+                -webkit-transform: scale(1);
+                transform: scale(1);
+            }
+
+            100% {
+                -webkit-transform: scale(2);
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+    }
+}
+
+#getStart {
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 50%;
+        bottom: 0;
+        left: 0;
+        background: #030712;
+    }
+}
+
+
+.circleText {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    border-radius: 100vmax;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.text {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    font-family: consolas;
+    font-size: 17px;
+    animation: textRotation 12s linear infinite;
+}
+
+@keyframes textRotation {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.text span {
+    position: absolute;
+    left: 50%;
+    font-size: 1.2em;
+    transform-origin: 0 100px;
+}
+
+
+.qr-code {
+    position: relative;
+    overflow: hidden;
+}
+
+.qr-code::before,
+.qr-code::after {
+    content: '';
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(45deg, #3b82f6, #10b981);
+    border-radius: 50%;
+    z-index: 0;
+}
+
+.qr-code::before {
+    top: -30px;
+    left: -30px;
+    opacity: 0.3;
+}
+
+.qr-code::after {
+    bottom: -30px;
+    right: -30px;
+    opacity: 0.3;
+}
+
+.payment-btn {
+    transition: all 0.3s ease;
+}
+
+.payment-btn:hover {
+    transform: scale(1.02);
+}
+
+.tick {
+    display: none;
+}
+
+.paid .tick {
+    display: inline-block;
+}
+
+.paid .btn-text {
+    display: none;
+}
