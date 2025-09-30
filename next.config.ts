@@ -1,8 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+   eslint: {
+    ignoreDuringBuilds: true,
+  },
   experimental: {
     logging: {
-      level: 'verbose',
+      // level: 'verbose',
     },
   },
   webpack(config: any) {

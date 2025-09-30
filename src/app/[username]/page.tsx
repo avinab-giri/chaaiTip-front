@@ -2,37 +2,45 @@ import ErrorPage from "@/components/screen/404Page";
 import BasicVarient from "@/components/variants/basic/basic";
 
 interface PageProps {
-  params: { username: string };
+  params: Promise<{
+    username: string;
+  }>;
 }
 
 const UserDetailsPage = async ({ params }: PageProps) => {
-  const { username } = params;
+  
+  const { username } = await params;
 
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/user-by/${encodeURIComponent(username)}`,
-    { cache: "no-store" } 
-  );
+  try {
+    
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/user-by/${encodeURIComponent(username)}`,
+      { cache: "no-store" }
+    );
 
-  if (!res.ok) {
+    if (!res.ok) {
+      return <ErrorPage />;
+    }
+
+    const fetched = await res.json();
+    
+    const fetchData = {
+      ...fetched,
+      theme: {
+        primary: fetched?.theme?.primary ?? "#7c3aed",
+      },
+    };
+
+    const accountVerify = fetchData?.payOutSetting?.accountVerify;
+
+    if (accountVerify === 0) {
+      return <ErrorPage />;
+    }
+
+    return <BasicVarient data={fetchData} />;
+  } catch (error) {
     return <ErrorPage />;
   }
-
-  const fetched = await res.json();
-
-  const fetchData = {
-    ...fetched,
-    theme: {
-      primary: fetched?.theme?.primary ?? "#7c3aed",
-    },
-  };
-
-  const accountVerify = fetchData?.payOutSetting?.accountVerify;
-
-  if (accountVerify === 0) {
-    return <ErrorPage />;
-  }
-
-  return <BasicVarient data={fetchData} />;
 };
 
 export default UserDetailsPage;

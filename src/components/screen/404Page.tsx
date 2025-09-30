@@ -189,7 +189,7 @@ const ErrorPage = () => {
                 <h2 className="error-title">Page Not Found</h2>
 
                 <p className="error-message">
-                    Oops! The page you're looking for seems to have wandered off into the digital wilderness.
+                    {"Oops! The page you're looking for seems to have wandered off into the digital wilderness."}
                 </p>
 
                 <div className="graphic">

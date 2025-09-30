@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import React from 'react'
 const Footer = () => {
   const currentYear = new Date().getFullYear(); 
@@ -7,9 +8,9 @@ const Footer = () => {
       <p>© {year} <a href={process.env.NEXT_PUBLIC_SITE_URL}>{process.env.NEXT_PUBLIC_BRAND_NAME}</a>. Made in Odisha, India</p>
 
       <ul className='flex items-center gap-5'>
-        <li><a className='font-medium hover:font-bold transition-all duration-200' href="/about">About</a></li>
-        <li><a className='font-medium hover:font-bold transition-all duration-200' href="/privacy-policy">Privacy</a></li>
-        <li><a className='font-medium hover:font-bold transition-all duration-200' href="/terms">Terms</a></li>
+        <li><Link className='font-medium hover:font-bold transition-all duration-200' href="/about">About</Link></li>
+        <li><Link className='font-medium hover:font-bold transition-all duration-200' href="/privacy-policy">Privacy</Link></li>
+        <li><Link className='font-medium hover:font-bold transition-all duration-200' href="/terms">Terms</Link></li>
       </ul>
 
       <ul className='flex items-center gap-5'>

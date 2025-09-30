@@ -52,7 +52,7 @@ export default function Home() {
           <div className="container">
             <div className="content grid grid-cols-12 relative">
               <div className="bgShap col-start-2 absolute -z-0 -top-5 animateLeftRightSlow">
-                <img src="/img/service-shape-1-1.png" alt="" />
+                <Image width={350} height={350} src={'/img/service-shape-1-1.png'} alt="" />
               </div>
 
               <CircleText classname="!absolute top-[30%] right-20 !text-gray-400" text={`${process.env.NEXT_PUBLIC_BRAND_NAME} - Turn Love into Chai -`} />
@@ -137,7 +137,7 @@ export default function Home() {
 
               <div className="item">
                 <div className="imgArea relative overflow-hidden">
-                  <img width={350} height={350} src="/img/work-1.png" alt="Work example" />
+                  <Image width={350} height={350} src="/img/work-1.png" alt="Work example"/>
                 </div>
                 <div className="textArea">
                   <h4>Create your {process.env.NEXT_PUBLIC_BRAND_NAME} page</h4>
@@ -147,7 +147,7 @@ export default function Home() {
 
               <div className="item">
                 <div className="imgArea relative overflow-hidden">
-                  <img width={350} height={350} src="/img/work-2.png" alt="Work example" />
+                  <Image width={350} height={350} src="/img/work-2.png" alt="Work example" /> 
                 </div>
                 <div className="textArea">
                   <h4>Share your link</h4>
@@ -157,7 +157,7 @@ export default function Home() {
 
               <div className="item">
                 <div className="imgArea relative overflow-hidden">
-                  <img width={350} height={350} src="/img/work-3.png" alt="Work example" />
+                  <Image width={350} height={350} src="/img/work-3.png" alt="Work example"/>
                 </div>
                 <div className="textArea">
                   <h4>Get tips instantly</h4>

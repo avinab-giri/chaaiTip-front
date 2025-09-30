@@ -62,7 +62,7 @@ const UpiQrGenerater: React.FC<UpiQrGeneraterProps> = ({ vpa, payeeName, amount,
 
     useEffect(() => {
         generateQRCode();
-    }, []);
+    }, [generateQRCode]);
 
     const formatted = new Intl.NumberFormat("en-US", {
         minimumFractionDigits: 2,
