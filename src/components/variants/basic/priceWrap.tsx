@@ -54,7 +54,7 @@ const BasicPriceWrap: React.FC<BasicPriceWrapProps> = ({ userId, userName, oneCu
                 return;
             }
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/support`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/add-support`, {
                 method: "POST",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({
