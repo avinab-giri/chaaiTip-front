@@ -12,10 +12,6 @@ nav {
 .heroSection {
   height: calc(100vh - 60px);
 }
-.heroSection .captionArea,
-.heroSection .imgArea {
-  width: 50%;
-}
 
 #getWorkSection .shape {
   position: absolute;

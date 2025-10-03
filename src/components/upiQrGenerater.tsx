@@ -1,8 +1,7 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react';
 import ThemeColorSetter from './themeColorSetter';
-import Image from 'next/image';
 import QRCode from 'qrcode';
 
 interface UpiQrGeneraterProps {
@@ -13,73 +12,108 @@ interface UpiQrGeneraterProps {
     onPaymentVerified: () => void;
 }
 
-const UpiQrGenerater: React.FC<UpiQrGeneraterProps> = ({ vpa, payeeName, amount, transactionNote, onPaymentVerified }) => {
-    const themeColor = '#002d1f';
+interface UPIDetails {
+    vpa: string;
+    payeeName: string;
+    amount: string;
+    transactionNote: string;
+    transactionRef: string;
+}
+
+const themeColor = '#002d1f';
+
+const generateSmartRefId = (): string => {
+    const timestamp = Date.now().toString().slice(-6);
+    const randomPart = Math.random().toString(36).slice(2, 6).toUpperCase();
+    return `PAY${timestamp}${randomPart}`;
+};
+
+const generateUPIString = (details: UPIDetails): string => {
+    const { vpa, payeeName, amount, transactionNote, transactionRef } = details;
+    const shortRef = (transactionRef || '').slice(-8);
+    const upiParams = new URLSearchParams({
+        pa: vpa,
+        pn: payeeName,
+        am: amount,
+        tn: `${transactionNote} ${shortRef}`,
+        cu: 'INR',
+    });
+    return `upi://pay?${upiParams.toString()}`;
+};
+
+const UpiQrGenerater: React.FC<UpiQrGeneraterProps> = ({
+    vpa,
+    payeeName,
+    amount,
+    transactionNote,
+    onPaymentVerified,
+}) => {
     const [qrCodeDataURL, setQRCodeDataURL] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isMobile, setIsMobile] = useState(false);
 
-    const generateUPIString = () => {
-        const upiParams = new URLSearchParams({
-            pa: vpa,
-            pn: payeeName,
-            ...(amount && { am: amount }),
-            ...(transactionNote && { tn: transactionNote }),
-            cu: 'INR'
-        });
+    // Prepare stable upiDetails: transactionRef is generated once per props-group
+    const upiDetails = useMemo<UPIDetails>(() => {
+        return {
+            vpa,
+            payeeName,
+            amount,
+            transactionNote,
+            transactionRef: generateSmartRefId(),
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [vpa, payeeName, amount, transactionNote]); // changes to inputs -> new ref
 
-        return `upi://pay?${upiParams.toString()}`;
-    };
-
-    const generateQRCode = async () => {
-        if (!vpa || !payeeName) {
-            alert('Please fill in VPA and Payee Name');
-            return;
-        }
-
-        setIsLoading(true);
-        try {
-            const upiString = generateUPIString();
-            console.log('UPI String:', upiString); // For debugging
-
-            const qrDataURL = await QRCode.toDataURL(upiString, {
-                width: 300,
-                margin: 2,
-                color: {
-                    dark: '#000000',
-                    light: '#FFFFFF'
-                }
-            });
-            setQRCodeDataURL(qrDataURL);
-        } catch (error) {
-            console.error('Error generating QR code:', error);
-            alert('Error generating QR code');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
+    // Generate QR when relevant details change (including the stable transactionRef)
     useEffect(() => {
-        generateQRCode();
-    }, [generateQRCode]);
+        let mounted = true;
+        const gen = async () => {
+            if (!upiDetails.vpa || !upiDetails.payeeName) return;
+            setIsLoading(true);
+            try {
+                const upiString = generateUPIString(upiDetails);
+                // console.debug('UPI String:', upiString);
+                const dataUrl = await QRCode.toDataURL(upiString, {
+                    width: 300,
+                    margin: 2,
+                    color: { dark: '#000000', light: '#FFFFFF' },
+                });
+                if (mounted) setQRCodeDataURL(dataUrl);
+            } catch (err) {
+                console.error('Error generating QR code', err);
+            } finally {
+                if (mounted) setIsLoading(false);
+            }
+        };
+        gen();
+        return () => {
+            mounted = false;
+        };
+    }, [upiDetails.vpa, upiDetails.payeeName, upiDetails.amount, upiDetails.transactionNote, upiDetails.transactionRef]);
 
-    const formatted = new Intl.NumberFormat("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(Number(amount));
+    // Format amount for UI
+    const formatted = useMemo(() => {
+        return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(amount));
+    }, [amount]);
 
-
-    const verifyPayment = async (): Promise<boolean> => {
+    // Payment verification - uses transactionRef (server side must expect this ref)
+    const verifyPayment = async (transactionRef: string): Promise<boolean> => {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payment/verify/${transactionNote}`);
+            const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+            const res = await fetch(`${apiBase}/api/payment/verify/${encodeURIComponent(transactionRef)}`);
+            if (!res.ok) {
+                console.error('Verify API returned not ok', res.status);
+                return false;
+            }
             const result = await res.json();
-            if (result.success && result.payment?.status === "COMPLETED") {
+            if (result.success && result.payment?.status === 'COMPLETED') {
                 return true;
             }
             return false;
         } catch (err) {
-            console.error("Verification failed", err);
+            console.error('Verification failed', err);
             return false;
         }
     };
@@ -91,10 +125,15 @@ const UpiQrGenerater: React.FC<UpiQrGeneraterProps> = ({ vpa, payeeName, amount,
         let attempts = 0;
         let verified = false;
 
-        while (attempts < 6 && !verified) { 
-            verified = await verifyPayment();
+        // Poll up to 6 times with 5s interval (total ~30s); adjust as needed
+        while (attempts < 6 && !verified) {
+            // Use the stable transactionRef
+            verified = await verifyPayment(upiDetails.transactionRef);
             if (verified) break;
-            await new Promise(resolve => setTimeout(resolve, 5000)); 
+            // simple wait
+            // NOTE: this is client-side waiting; acceptable for a short poll
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise((r) => setTimeout(r, 5000));
             attempts++;
         }
 
@@ -103,58 +142,57 @@ const UpiQrGenerater: React.FC<UpiQrGeneraterProps> = ({ vpa, payeeName, amount,
         if (verified) {
             onPaymentVerified();
         } else {
-            setError("❌ Payment not yet received. Please try again in a moment.");
+            setError('❌ Payment not yet received. Please try again in a moment.');
+        }
+    };
+
+    const handleDirectPayment = () => {
+        const upiString = generateUPIString(upiDetails);
+        const userAgent = typeof navigator !== 'undefined' ? (navigator.userAgent || navigator.vendor || '') : '';
+        const isMobile = /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+        if (isMobile) {
+            // navigate to UPI url to open apps on mobile
+            window.location.href = upiString;
+        } else {
+            // Desktop — instruct to scan
+            // You can show a modal instead of alert in your real UI
+            alert('Please scan the QR code with your mobile UPI app.');
+        }
+    };
+
+    const copyUPIID = async () => {
+        try {
+            await navigator.clipboard.writeText(upiDetails.vpa);
+            alert('UPI ID copied to clipboard!');
+        } catch {
+            alert('Failed to copy UPI ID.');
+        }
+    };
+
+    const copyRefID = async () => {
+        try {
+            await navigator.clipboard.writeText(upiDetails.transactionRef);
+            alert('Reference ID copied to clipboard!');
+        } catch {
+            alert('Failed to copy Reference ID.');
         }
     };
 
     return (
         <>
             <ThemeColorSetter color={themeColor} />
-            {isLoading ? <>
+
+            {isLoading ? (
                 <div className="animate-pulse">
-                    <div className="relative max-w-[450px] w-full">
-                        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
-
-                            <div className="p-6 flex justify-between items-center">
-                                <div>
-                                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                                </div>
-                                <div>
-                                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                                    <div className="h-6 bg-gray-200 rounded w-1/2"></div>
-                                </div>
-                            </div>
-
-                            <div className="p-4 flex flex-col items-center">
-                                <div className="bg-white p-4 rounded-xl shadow-md mb-5 relative z-10 h-24 w-24"></div>
-                                <div className="py-3 px-6 w-full text-center mb-2">
-                                    <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
-                                    <div className="flex items-center justify-center gap-5">
-                                        <div className="h-5 w-5 bg-gray-200 rounded-full"></div>
-                                        <div className="h-5 w-5 bg-gray-200 rounded-full"></div>
-                                        <div className="h-5 w-5 bg-gray-200 rounded-full"></div>
-                                        <div className="h-5 w-5 bg-gray-200 rounded-full"></div>
-                                        <div className="h-5 w-5 bg-gray-200 rounded-full"></div>
-                                    </div>
-                                </div>
-                                <div className="h-10 bg-gray-200 rounded w-full"></div>
-                            </div>
-
-                            <div className="bg-gray-50 p-4 text-center">
-                                <div className="h-4 bg-gray-200 rounded"></div>
-                            </div>
-                        </div>
-                    </div>
+                    {/* simplified skeleton — keep your original skeleton if desired */}
+                    <div className="max-w-[450px] w-full bg-white rounded-2xl shadow-xl p-6">Generating QR…</div>
                 </div>
-            </> : <>
+            ) : (
                 <div className="card">
                     <div className="card-body relative max-w-[450px] w-full">
                         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden card">
-
                             <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white flex justify-between items-center">
-
-                                <div className=' mb-2'>
+                                <div className="mb-2">
                                     <h1 className="text-2xl font-bold capitalize">{payeeName}</h1>
                                     <p className="!text-blue-100 !text-xs">{process.env.NEXT_PUBLIC_BRAND_NAME} Trusted Business</p>
                                 </div>
@@ -166,44 +204,63 @@ const UpiQrGenerater: React.FC<UpiQrGeneraterProps> = ({ vpa, payeeName, amount,
 
                             <div className="p-4 flex flex-col items-center">
                                 <div className="qr-code bg-white p-4 rounded-xl shadow-md mb-5 relative z-10">
-                                    <Image width={150} height={150} src={qrCodeDataURL} alt={''} />
+                                    {/* Using plain img for dataURL */}
+                                    {qrCodeDataURL ? (
+                                        <img src={qrCodeDataURL} alt="UPI QR Code" width={150} height={150} />
+                                    ) : (
+                                        <div className="h-[150px] w-[150px] bg-gray-100 flex items-center justify-center">No QR</div>
+                                    )}
                                 </div>
-
-                                {/* <div className="w-full bg-blue-50 rounded-lg p-4 mb-6">
-                                <p className="text-blue-800 text-center text-sm font-medium">
-                                    <i className="fas fa-lock-shield mr-1.5"></i> Secured by {process.env.NEXT_PUBLIC_BRAND_NAME}
-                                </p>
-                            </div> */}
 
                                 <div className="bottom-bar py-3 px-6 bg-[var(--theme-color)]/10 w-full text-center mb-2">
                                     <p className="text-gray-500 !text-xs mb-2">Scan With Any UPI App.</p>
-                                    <div className='flex items-center justify-center gap-5'>
-                                        <Image width={20} height={20} src={'/img/google-pay-icon.svg'} alt='' />
-                                        <Image width={20} height={20} src={'/img/phonepe-icon.svg'} alt='' />
-                                        <Image width={20} height={20} src={'/img/paytm-icon.svg'} alt='' />
-                                        <Image width={20} height={20} src={'/img/mobikwik-logo-icon.svg'} alt='' />
-                                        <Image width={20} height={20} src={'/img/bhim-app-icon.svg'} alt='' />
+                                    <div className="flex items-center justify-center gap-5">
+                                        <img width={20} height={20} src="/img/google-pay-icon.svg" alt="GPay" />
+                                        <img width={20} height={20} src="/img/phonepe-icon.svg" alt="PhonePe" />
+                                        <img width={20} height={20} src="/img/paytm-icon.svg" alt="Paytm" />
+                                        <img width={20} height={20} src="/img/mobikwik-logo-icon.svg" alt="Mobikwik" />
+                                        <img width={20} height={20} src="/img/bhim-app-icon.svg" alt="BHIM" />
                                     </div>
                                 </div>
 
-                                <button id="paymentBtn" onClick={handleVerifyPayment}
-                                    disabled={loading} className="payment-btn w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 rounded-xl shadow-md flex items-center justify-center">
-                                    <span className="btn-text">{loading ? "⏳ Verifying..." : "✅ I Have Made the Payment"}</span>
-                                    <span className="tick"><i className="fas fa-check-circle mr-2"></i> Payment Verified</span>
-                                </button>
-                            </div>
+                                <div className="w-full grid gap-2">
+                                    {isMobile && (
+                                        <button
+                                            onClick={handleDirectPayment}
+                                            className="w-full bg-green-600 text-white py-3 px-6 rounded-xl text-lg font-semibold hover:bg-green-700 transition-colors"
+                                        >
+                                            Pay with Any UPI App
+                                        </button>
+                                    )}
 
+                                    <button
+                                        id="paymentBtn"
+                                        onClick={handleVerifyPayment}
+                                        disabled={loading}
+                                        className="payment-btn w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 rounded-xl shadow-md flex items-center justify-center"
+                                    >
+                                        <span className="btn-text">{loading ? '⏳ Verifying...' : '✅ I Have Made the Payment'}</span>
+                                    </button>
 
-                            <div className="bg-gray-50 p-4 text-center">
-                                <p className="!text-xs text-gray-500">© 2023 {process.env.NEXT_PUBLIC_BRAND_NAME}. All rights reserved.</p>
+                                    <div className="flex gap-2 mt-2">
+                                        <button onClick={copyUPIID} className="flex-1 py-2 rounded border">
+                                            Copy UPI ID
+                                        </button>
+                                        <button onClick={copyRefID} className="flex-1 py-2 rounded border">
+                                            Copy Reference
+                                        </button>
+                                    </div>
+
+                                    {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+                                    <p className="!text-xs text-gray-500 mt-3">© {new Date().getFullYear()} {process.env.NEXT_PUBLIC_BRAND_NAME}. All rights reserved.</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </>}
-
+            )}
         </>
-    )
-}
+    );
+};
 
-export default UpiQrGenerater
+export default UpiQrGenerater;

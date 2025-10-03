@@ -22,8 +22,10 @@ export default function Home() {
 
         <header className="bg-gradient-to-b from-primary-100 to-white">
           <div className="container">
+
             <div className="heroSection flex items-center justify-between flex-wrap">
-              <div className="captionArea max-w-[500px] xl:scale-150 xl:origin-left">
+
+              <div className="captionArea max-w-[500px] w-full md:w-1/2 scale-100 xl:scale-150 xl:origin-left">
                 <div className="inline-block px-4 py-2 bg-chai-light rounded-full mb-2 border border-chai-DEFAULT/20">
                   <h4 className="flex items-center gap-2"><IconZeroPercentage className="w-5 h-5" /> <span className="text-xl">commission</span></h4>
                 </div>
@@ -35,9 +37,11 @@ export default function Home() {
                 </div>
                 <p className="text-sm !text-gray-500">It’s free and takes less than a minute!</p>
               </div>
-              <div className="imgArea relative">
+
+              <div className="imgArea relative w-full md:w-1/2">
                 <div><Image width={650} height={650} src={'/img/hero-section.png'} alt="" /></div>
               </div>
+
             </div>
           </div>
         </header>
@@ -57,9 +61,9 @@ export default function Home() {
 
               <CircleText classname="!absolute top-[30%] right-20 !text-gray-400" text={`${process.env.NEXT_PUBLIC_BRAND_NAME} - Turn Love into Chai -`} />
 
-              <div className="col-span-8 col-start-3 relative z-10 flex flex-wrap">
+              <div className="col-span-12 md:col-span-8 col-start-1 md:col-start-3 relative z-10 flex flex-wrap">
 
-                <div className="item w-full grid items-center grid-cols-2 gap-5 mb-3">
+                <div className="item w-full grid items-center grid-cols-1 md:grid-cols-2 gap-5 mb-3">
                   <div>
                     <h4 className="py-2 px-6 bg-primary-500 inline-block !text-sm !font-normal rounded-full">What is ChaaiTip?</h4>
                     <h2 className="mb-4">Support Your Favourite Creator with a Cup of Chaai</h2>
@@ -88,7 +92,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="grid items-center grid-cols-2 gap-3">
+                <div className="grid items-center grid-cols-1 md:grid-cols-2 gap-3">
 
                   <div className="item !grid-cols-1 w-full h-full justify-items-center">
                     <div className="leftSide">

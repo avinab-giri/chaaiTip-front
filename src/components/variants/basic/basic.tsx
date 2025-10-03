@@ -115,7 +115,7 @@ const BasicVarient: React.FC<BasicVarientProps> = ({ data }) => {
             <main className="max-w-5xl mx-auto px-4 py-8 -mt-16">
                 <div className="grid lg:grid-cols-2 gap-8 items-start">
 
-                    <div className="space-y-6">
+                    <div className="space-y-6 order-2 lg:order-1">
                         <div className="bg-white rounded-xl p-6 card border border-gray-100">
                             <h2 className="text-2xl font-bold text-gray-800 mb-3">About</h2>
                             <p className="text-gray-600 mb-6">
@@ -128,7 +128,7 @@ const BasicVarient: React.FC<BasicVarientProps> = ({ data }) => {
                         <BasicMilestones username={username} refreshKey={refreshKey} milestoneTitle={milestoneTitle} />
                     </div>
 
-                    <div className="sticky top-8">
+                    <div className="sticky top-8 order-1 lg:order-2">
                         <BasicPriceWrap
                             userId={userId}
                             userName={userName}
